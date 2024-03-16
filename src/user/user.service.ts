@@ -5,6 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { UserEntity } from './entities/user.entity';
 import { Model } from 'mongoose';
 import { UserResponseType } from './types/userResponse.type';
+import { sign } from 'jsonwebtoken';
 
 @Injectable()
 export class UserService {
@@ -33,8 +34,18 @@ export class UserService {
     return `This action returns all user`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findByUsername(username: string) {
+    const user = await this.userModel
+      .findOne({
+        username: username,
+      })
+      .select('+password');
+
+    return {
+      username: user.username,
+      email: user.email,
+      password: user.password
+    };
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
@@ -49,6 +60,11 @@ export class UserService {
     return {
       username: userEntity.username,
       email: userEntity.email,
+      token: this.generateJwt(userEntity),
     };
+  }
+
+  generateJwt(userEntity: UserEntity): string {
+    return sign({ email: userEntity.email }, 'JWT_SECRET');
   }
 }
